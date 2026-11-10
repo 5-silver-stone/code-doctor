@@ -263,8 +263,15 @@ elif page == "오류 통계":
 elif page == "API·사용 안내":
     st.subheader("연결 상태 및 사용 안내")
     key = deepl_key()
-    st.success("DeepL API 키 설정을 찾았습니다. 번역 요청으로 실제 작동 여부를 확인하세요.") if key else st.warning(
-        "DeepL API 키를 찾지 못했습니다. .streamlit/secrets.toml의 DEEPL_API_KEY 값을 확인하세요.")
+    if key:
+        st.success(
+        "DeepL API 키 설정을 찾았습니다. 번역 요청으로 실제 작동 여부를 확인하세요."
+        )
+    else:
+        st.warning(
+        "DeepL API 키를 찾지 못했습니다. "
+        ".streamlit/secrets.toml의 DEEPL_API_KEY 값을 확인하세요."
+        )
     st.write("**Stack Exchange API:** 공개 질문 검색은 키 없이 사용 가능합니다.")
     st.write("**PyPI API:** 공개 패키지 조회는 키 없이 사용 가능합니다.")
     st.markdown("""
