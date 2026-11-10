@@ -1,0 +1,29 @@
+Code Doctor v1 실행 순서 (Windows / VS Code)
+========================================
+1. Code_Doctor_v1.zip을 압축 해제합니다.
+2. VS Code → 파일 → 폴더 열기 → Code_Doctor_v1 선택.
+3. .streamlit 폴더 안의 secrets.toml.example 파일을 복사합니다.
+4. 복사본 이름을 secrets.toml로 변경합니다.
+5. secrets.toml을 열고 DEEPL_API_KEY = "여기에_발급받은_DeepL_API_키_입력" 부분에
+   발급받은 DeepL API 키를 붙여넣어 저장합니다. (큰따옴표 유지)
+6. VS Code 상단 터미널 → 새 터미널을 선택합니다.
+7. 아래 두 명령어를 순서대로 입력합니다.
+
+   py -m pip install -r requirements.txt
+   py -m streamlit run app.py
+
+8. 브라우저에서 http://localhost:8501 을 확인합니다.
+9. '오류 분석·검색'에서 NameError: name 'x' is not defined 를 입력해 봅니다.
+10. '오류 메시지에서 검색어 추출' → '관련 질문 10개 검색' → 답변 가져오기 순으로 누릅니다.
+11. 사이드바에서 '한국어'를 선택해 자동 번역을 확인합니다.
+12. 제목 + 원인 + 해결 방법을 입력해 기록 저장한 후 '저장 기록' 메뉴에서 조회해 봅니다.
+
+[자주 하는 실수]
+- 파일 이름이 secrets.toml.txt 로 저장되면 안 됩니다.
+- 파일 위치는 Code_Doctor_v1/.streamlit/secrets.toml 입니다.
+- API 키는 여기에 보내지 마세요.
+- 프로그래밍 중 발견한 오류가 나오면 터미널 메시지와 관련 코드 (키 제외)를 공유하세요.
+- 앱을 종료할 때 VS Code 터미널에서 Ctrl+C 를 누릅니다.
+
+[자동 테스트 (선택)]
+py -m unittest discover -s tests -v
