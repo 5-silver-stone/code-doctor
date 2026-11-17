@@ -1,12 +1,14 @@
 """Code Doctor: Streamlit project for Python error research and learning."""
 import hashlib
 import html
+import json
 import os
 
 import pandas as pd
 import streamlit as st
 
 import checker
+import browser_profiles
 import ai_doctor
 import language_errors
 import search_history
@@ -242,7 +244,7 @@ st.markdown(
     </div>""",
     unsafe_allow_html=True,
 )
-page = st.sidebar.radio("메뉴", ["오류 분석·검색", "저장 기록", "오류 통계", "API·사용 안내"])
+page = st.sidebar.radio("메뉴", ["오류 분석·검색", "저장 기록", "오류 통계", "API·사용 안내", "기기별 프로필"])
 st.sidebar.markdown("---")
 st.sidebar.caption("Code Doctor · 개발자 오류 해결 도구")
 st.sidebar.caption("📁 파일 업로드는 '오류 분석·검색' 화면 맨 위에서 할 수 있어요.")
@@ -609,6 +611,7 @@ if page == "오류 분석·검색":
 
 elif page == "저장 기록":
     st.markdown('<div class="doctor-note">📚 <b>나의 해결 기록</b> · 이전 오류를 검색하고 해결 과정을 관리하세요.</div>', unsafe_allow_html=True)
+    st.warning("기존 SQLite 저장 기록은 아직 사용자별로 분리되지 않은 서버 기록입니다. 비밀 코드나 개인정보를 저장하지 마세요. 기기별 프로필 기록은 별도 메뉴에서 관리합니다.")
     st.subheader("SQLite에 저장된 오류 기록")
     col1, col2 = st.columns([2, 1])
     search = col1.text_input("기록 검색 (제목·오류 유형·메시지·해결 방법)")
@@ -694,6 +697,103 @@ elif page == "오류 통계":
         else:
             st.info("선택한 기간에 등록된 오류 기록이 없어요.")
         st.caption("통계는 실제 코드 실행 횟수가 아니라 SQLite에 저장한 오류 기록을 기준으로 계산합니다. 사용자별 계정은 아직 지원하지 않습니다.")
+
+elif page == "기기별 프로필":
+    st.subheader("📱 이 브라우저의 간편 프로필")
+    st.warning(
+        "실제 온라인 인증 계정이 아닙니다. 브라우저 로컬 저장소에만 이름·PIN 해시·간단한 기록을 "
+        "보관합니다. 4자리 PIN은 보안성이 낮으며, 브라우저 데이터를 지우거나 다른 기기에서 "
+        "접속하면 복원되지 않습니다. 기존 서버 SQLite 기록은 이 기능과 분리되어 있습니다."
+    )
+    try:
+        from streamlit_local_storage import LocalStorage
+        local_storage = LocalStorage()
+        raw_profiles = local_storage.getItem(browser_profiles.STORAGE_KEY, key="cd_profile_load")
+    except (ImportError, RuntimeError, ValueError) as exc:
+        st.error("브라우저 저장소 연결을 초기화하지 못했습니다. 프로필 기능을 사용할 수 없어요.")
+        raw_profiles = None
+        local_storage = None
+
+    if st.session_state.get("browser_profile_bundle") is None:
+        try:
+            if raw_profiles is not None:
+                st.session_state.browser_profile_bundle = browser_profiles.load_bundle(raw_profiles)
+        except ValueError as exc:
+            st.error(str(exc))
+            st.stop()
+    bundle = st.session_state.get("browser_profile_bundle") or browser_profiles.load_bundle(None)
+
+    def save_profile_bundle(changed):
+        st.session_state.browser_profile_bundle = changed
+        # The component updates browser localStorage asynchronously.
+        if local_storage is not None:
+            token = st.session_state.get("browser_profile_write_count", 0) + 1
+            st.session_state.browser_profile_write_count = token
+            local_storage.setItem(
+                browser_profiles.STORAGE_KEY,
+                json.dumps(changed, ensure_ascii=False),
+                key=f"cd_profile_save_{token}",
+            )
+
+    user_names = browser_profiles.list_account_names(bundle)
+    st.caption(f"이 브라우저에서 확인된 프로필: {', '.join(user_names) if user_names else '없음'}")
+    with st.expander("새 기기별 프로필 만들기", expanded=not bool(user_names)):
+        with st.form("local_signup"):
+            new_name = st.text_input("프로필 이름 (2~20자)")
+            new_pin = st.text_input("숫자 4자리 PIN", type="password", max_chars=4)
+            signup_clicked = st.form_submit_button("기기에 프로필 만들기", disabled=local_storage is None)
+        if signup_clicked:
+            try:
+                new_bundle = browser_profiles.signup(bundle, new_name, new_pin)
+                save_profile_bundle(new_bundle)
+                st.session_state.active_browser_profile = new_name.strip()
+                st.success("이 기기에 프로필을 저장했습니다. 새로고침 후에도 표시되는지 확인하세요.")
+            except ValueError as exc:
+                st.error(str(exc))
+
+    active_profile = st.session_state.get("active_browser_profile")
+    if not active_profile and user_names:
+        with st.form("local_login"):
+            selected_name = st.selectbox("로그인할 프로필", user_names)
+            pin = st.text_input("4자리 PIN 입력", type="password", max_chars=4)
+            login_clicked = st.form_submit_button("기기별 프로필 열기", disabled=local_storage is None)
+        if login_clicked:
+            if browser_profiles.authenticate(bundle, selected_name, pin):
+                st.session_state.active_browser_profile = selected_name
+                st.success("프로필을 열었습니다.")
+                st.rerun()
+            else:
+                st.error("프로필 또는 PIN이 올바르지 않습니다.")
+
+    active_profile = st.session_state.get("active_browser_profile")
+    if active_profile:
+        st.success(f"현재 프로필: {active_profile}")
+        if st.button("프로필 잠그기"):
+            st.session_state.active_browser_profile = None
+            st.rerun()
+        st.markdown("#### 📝 기기별 개인 학습 기록")
+        st.caption("이곳의 기록만 브라우저 프로필별로 분리됩니다. 기존 SQLite 저장 기록과는 별개입니다.")
+        with st.form("local_note"):
+            note_title = st.text_input("기록 제목", max_chars=100)
+            note_detail = st.text_area("해결 내용", max_chars=3000)
+            note_clicked = st.form_submit_button("이 브라우저에 기록 저장", disabled=local_storage is None)
+        if note_clicked:
+            try:
+                updated = browser_profiles.add_note(bundle, active_profile, note_title, note_detail)
+                save_profile_bundle(updated)
+                st.success("기기에 기록을 추가했습니다.")
+                bundle = updated
+            except ValueError as exc:
+                st.error(str(exc))
+        key = active_profile.strip().casefold()
+        notes = bundle.get("accounts", {}).get(key, {}).get("notes", [])
+        if notes:
+            for index, note in enumerate(notes):
+                with st.expander(f"{index + 1}. {note['title']}"):
+                    st.write(note["detail"])
+                    st.caption(note["created_at"])
+        else:
+            st.info("이 프로필에는 아직 기록이 없습니다.")
 
 elif page == "API·사용 안내":
     st.subheader("연결 상태 및 사용 안내")
