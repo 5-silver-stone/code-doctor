@@ -161,3 +161,23 @@ def statistics(path=None):
         categories = [dict(r) for r in conn.execute(
             "SELECT CASE WHEN error_type='' THEN '기타' ELSE error_type END AS error_type,COUNT(*) AS count FROM error_records GROUP BY 1 ORDER BY count DESC").fetchall()]
     return statuses, categories
+
+
+def error_trend(days=30, path=None):
+    """Aggregate saved error records by creation date for the last N local days."""
+    if not isinstance(days, int) or days not in (7, 30, 90):
+        raise ValueError("조회 기간은 7일, 30일, 90일만 지원합니다.")
+    # The bound modifier prevents interpolation of untrusted SQL.
+    modifier = f"-{days - 1} days"
+    with connect(path) as conn:
+        return [dict(r) for r in conn.execute(
+            """SELECT date(created_at) AS day,
+                      COUNT(*) AS total,
+                      SUM(CASE WHEN status='해결' THEN 1 ELSE 0 END) AS resolved
+               FROM error_records
+               WHERE date(created_at) >= date('now', 'localtime', ?)
+                 AND date(created_at) <= date('now', 'localtime')
+               GROUP BY date(created_at)
+               ORDER BY day""",
+            (modifier,),
+        ).fetchall()]
