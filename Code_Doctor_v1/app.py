@@ -238,7 +238,7 @@ if page == "오류 분석·검색":
     error_type, explanation = checker.classify_error(error_message)
     st.subheader("2. 로컬 오류 분석")
     if error_type:
-        st.info(f"**추출된 오류 유형:** {error_type}\n\n{explanation}")
+        st.info(f"**추출된 오류 유형:** {error_type}\n\n**분류:** {checker.error_category(error_type)}\n\n{explanation}")
     elif error_message:
         st.info("오류 유형을 자동 추출하지 못했습니다. 아래에 검색어를 직접 입력할 수 있어요.")
     if code.strip():
