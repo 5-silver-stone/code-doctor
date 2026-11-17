@@ -34,9 +34,78 @@ def init_state():
 
 
 init_state()
-st.title("🩺 Code Doctor")
-st.caption("오류 분석 · Stack Overflow 검색 · 번역 · 개인 해결 기록")
+
+# Theme preference is per browser session; no database or API behavior changes.
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+with st.sidebar:
+    st.toggle("🌙 다크 모드", key="dark_mode", help="밝은 화면과 어두운 화면을 전환합니다.")
+
+dark = st.session_state.dark_mode
+bg = "#0b1220" if dark else "#f4f7ff"
+surface = "#141f32" if dark else "#ffffff"
+foreground = "#e8efff" if dark else "#18243a"
+muted = "#a6b5cf" if dark else "#53627a"
+border = "#30405d" if dark else "#dce5f6"
+sidebar_bg = "#101b2e" if dark else "#eaf0ff"
+input_bg = "#17243a" if dark else "#ffffff"
+st.markdown(
+    f"""<style>
+    .stApp {{background: {bg}; color: {foreground};}}
+    [data-testid="stSidebar"] {{background: {sidebar_bg}; border-right: 1px solid {border};}}
+    [data-testid="stHeader"] {{background: {bg};}}
+    .stApp h1, .stApp h2, .stApp h3, .stApp p,
+    .stApp label, .stApp [data-testid="stMarkdownContainer"] {{color: {foreground};}}
+    .stApp [data-testid="stCaptionContainer"] {{color: {muted};}}
+    .stApp [data-testid="stVerticalBlockBorderWrapper"] {{
+        border-color: {border}; border-radius: 16px;
+    }}
+    .stApp [data-testid="stTextInput"] input,
+    .stApp [data-testid="stTextArea"] textarea {{
+        background: {input_bg}; color: {foreground}; border-radius: 10px;
+        border: 1px solid {border};
+    }}
+    .stApp [data-testid="stSelectbox"] > div > div {{
+        background: {input_bg}; color: {foreground}; border-radius: 10px;
+    }}
+    .stApp .stButton button[kind="primary"],
+    .stApp .stFormSubmitButton button[kind="primary"] {{
+        background: linear-gradient(110deg, #4169e1, #8055df);
+        border: none; color: #fff; border-radius: 10px;
+    }}
+    .stApp .stButton button:hover, .stApp .stFormSubmitButton button:hover {{
+        border-color: #7189ff;
+    }}
+    .doctor-hero {{
+        background: linear-gradient(115deg, #305bc9 0%, #6949b7 65%, #178fa6 100%);
+        padding: 1.5rem 1.8rem; border-radius: 20px;
+        margin-bottom: 1.3rem; box-shadow: 0 8px 24px #172f6426;
+    }}
+    .doctor-hero h1 {{color: #fff !important; margin: 0; font-size: 2.25rem;}}
+    .doctor-hero p {{color: #e9efff !important; margin: .35rem 0 0;}}
+    .doctor-pill {{
+        display: inline-block; padding: .25rem .7rem; border-radius: 999px;
+        background: #ffffff24; color: white; font-size: .78rem; margin-bottom: .5rem;
+    }}
+    .doctor-note {{
+        background: {surface}; border: 1px solid {border};
+        border-left: 4px solid #6685ee; padding: .8rem 1rem;
+        border-radius: 12px; color: {foreground}; margin-bottom: 1rem;
+    }}
+    </style>""",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    """<div class="doctor-hero">
+    <span class="doctor-pill">DEVELOPER TOOL · v1.1</span>
+    <h1>🩺 Code Doctor</h1>
+    <p>코드 오류를 진단하고, 해결 방법을 찾고, 경험을 기록하세요.</p>
+    </div>""",
+    unsafe_allow_html=True,
+)
 page = st.sidebar.radio("메뉴", ["오류 분석·검색", "저장 기록", "오류 통계", "API·사용 안내"])
+st.sidebar.markdown("---")
+st.sidebar.caption("Code Doctor · 개발자 오류 해결 도구")
 display_lang = st.sidebar.selectbox("설명 언어", list(LANGUAGES), index=0)
 target_language = LANGUAGES[display_lang]
 st.sidebar.caption("사용자 코드는 실행하지 않으며, 코드 전체를 외부 API에 전송하지 않습니다.")
@@ -73,6 +142,7 @@ def answer_view(answer, question):
 
 
 if page == "오류 분석·검색":
+    st.markdown('<div class="doctor-note">🔎 <b>진단 시작</b> · 오류 메시지나 코드를 입력하면 로컬에서 먼저 분석합니다.</div>', unsafe_allow_html=True)
     st.subheader("1. 오류 또는 코드 입력")
     col1, col2 = st.columns(2)
     with col1:
@@ -194,6 +264,7 @@ if page == "오류 분석·검색":
             st.error(str(exc))
 
 elif page == "저장 기록":
+    st.markdown('<div class="doctor-note">📚 <b>나의 해결 기록</b> · 이전 오류를 검색하고 해결 과정을 관리하세요.</div>', unsafe_allow_html=True)
     st.subheader("SQLite에 저장된 오류 기록")
     col1, col2 = st.columns([2, 1])
     search = col1.text_input("기록 검색 (제목·오류 유형·메시지·해결 방법)")
@@ -249,6 +320,7 @@ elif page == "저장 기록":
             st.rerun()
 
 elif page == "오류 통계":
+    st.markdown('<div class="doctor-note">📊 <b>오류 분석 대시보드</b> · 저장된 기록의 유형과 해결 상태를 확인하세요.</div>', unsafe_allow_html=True)
     st.subheader("저장된 오류의 유형과 해결 현황")
     statuses, categories = db.statistics()
     if not statuses:
