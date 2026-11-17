@@ -104,3 +104,18 @@ def level_instructions(level, task="explain"):
         "최소 수정 코드의 예시와 변경 이유, 테스트 방법을 제시해. 원본 코드를 자동 변경하지 마."
     )
     return common + levels[level] + action
+
+
+def chat_context(messages, max_items=6):
+    """Build a limited, labeled transcript of the current session's debug dialog."""
+    if not isinstance(messages, list):
+        raise ValueError("대화 형식이 올바르지 않습니다.")
+    parts = []
+    for item in messages[-max_items:]:
+        if not isinstance(item, dict):
+            continue
+        role = "사용자" if item.get("role") == "user" else "AI"
+        content = item.get("content")
+        if isinstance(content, str):
+            parts.append(f"{role}: {content[:1800]}")
+    return "\n\n".join(parts)[:9000]

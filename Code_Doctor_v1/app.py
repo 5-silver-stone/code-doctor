@@ -48,7 +48,7 @@ def openai_model():
 
 def init_state():
     defaults = {"results": [], "answers": [], "last_record_id": None,
-                "query": "", "question_id": None, "quota": None, "search_history": [], "ai_explanation": "", "ai_suggestion": ""}
+                "query": "", "question_id": None, "quota": None, "search_history": [], "ai_explanation": "", "ai_suggestion": "", "ai_chat": []}
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -452,6 +452,39 @@ if page == "오류 분석·검색":
             st.markdown("**수정 코드 제안 결과 (자동 반영되지 않음)**")
             st.markdown(st.session_state.ai_suggestion)
             st.caption("제안은 AI가 생성한 참고 코드이며 원본 입력창을 변경하지 않습니다.")
+        st.divider()
+        st.markdown("**💬 AI 대화형 디버깅**")
+        st.caption("이전 질문을 참고해 후속 질문에 답합니다. 대화는 이번 접속에만 남고 서버 기록 DB에는 저장되지 않습니다.")
+        for message in st.session_state.ai_chat:
+            st.markdown("**나:**" if message["role"] == "user" else "**AI:**")
+            st.write(message["content"])
+        chat_question = st.text_area(
+            "추가 디버깅 질문", key="ai_chat_question", max_chars=1500,
+            placeholder="예: 그 오류가 왜 발생하는지 구체적인 예시로 설명해 줘.",
+        )
+        if st.button("💬 추가 질문 보내기", disabled=not (ai_key and consent and chat_question.strip())):
+            followup_payload = dict(payload)
+            followup_payload["이전 대화"] = ai_doctor.chat_context(st.session_state.ai_chat)
+            followup_payload["추가 질문"] = chat_question.strip()
+            try:
+                with st.spinner("답변을 작성하는 중..."):
+                    answer = ai_doctor.request_response(
+                        followup_payload, api_key=ai_key, model=openai_model(),
+                        instructions=ai_doctor.level_instructions(ai_level, "explain") +
+                        " 앞선 대화 내용과 지금 질문을 연결해 설명하세요.",
+                    )
+                st.session_state.ai_chat = (
+                    st.session_state.ai_chat + [
+                        {"role": "user", "content": chat_question.strip()},
+                        {"role": "assistant", "content": answer},
+                    ]
+                )[-10:]
+                st.rerun()
+            except ai_doctor.AIServiceError as exc:
+                st.error(str(exc))
+        if st.button("💬 대화 지우기", disabled=not st.session_state.ai_chat):
+            st.session_state.ai_chat = []
+            st.rerun()
 
     with st.expander("오류 기록에 저장", expanded=False):
         cause = st.text_area("직접 확인한 원인", key="new_cause")
