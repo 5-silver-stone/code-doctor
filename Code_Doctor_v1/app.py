@@ -1,4 +1,5 @@
 """Code Doctor: Streamlit project for Python error research and learning."""
+import hashlib
 import html
 import os
 
@@ -11,6 +12,7 @@ import database as db
 import pypi_api
 import stack_api
 import translate_api
+import upload_helper
 
 st.set_page_config(page_title="Code Doctor", page_icon="🩺", layout="wide")
 db.initialize()
@@ -182,6 +184,25 @@ def answer_view(answer, question):
 if page == "오류 분석·검색":
     st.markdown('<div class="doctor-note">🔎 <b>진단 시작</b> · 오류 메시지나 코드를 입력하면 로컬에서 먼저 분석합니다.</div>', unsafe_allow_html=True)
     st.subheader("1. 오류 또는 코드 입력")
+    st.caption("Python .py 파일을 끌어 놓으면 아래 코드 입력창에 내용이 채워집니다. 파일을 실행하지 않습니다.")
+    upload = st.file_uploader("📁 Python 파일 끌어놓기 또는 선택", type=["py"], key="python_upload")
+    if upload is None:
+        st.session_state.pop("last_upload_token", None)
+    elif upload.size > upload_helper.MAX_FILE_BYTES:
+        st.error("업로드 파일은 512KB 이하여야 합니다.")
+    else:
+        raw_bytes = upload.getvalue()
+        upload_token = (upload.name, hashlib.sha256(raw_bytes).hexdigest())
+        if st.session_state.get("last_upload_token") != upload_token:
+            try:
+                imported_source = upload_helper.decode_python_upload(upload.name, raw_bytes)
+            except ValueError as exc:
+                st.error(str(exc))
+            else:
+                st.session_state["code_input"] = imported_source
+                st.session_state["last_upload_token"] = upload_token
+                st.success(f"{upload.name} 파일을 읽었습니다. 아래 코드를 검토해 주세요.")
+
     col1, col2 = st.columns(2)
     with col1:
         title = st.text_input("오류 기록 제목", placeholder="예: Streamlit 버튼 key 중복")
@@ -191,7 +212,7 @@ if page == "오류 분석·검색":
                                      placeholder="예: NameError: name 'x' is not defined")
     with col2:
         code = st.text_area("검사할 Python 코드 (선택 · 서버에서 실행하지 않음)", height=245,
-                            placeholder="x = 10\nif x > 5:\n    print(x)")
+                            placeholder="x = 10\nif x > 5:\n    print(x)", key="code_input")
     description = st.text_area("오류가 발생한 상황 (선택)")
     expected = st.text_input("예상 결과 (선택)")
     actual = st.text_input("실제 결과 (선택)")
