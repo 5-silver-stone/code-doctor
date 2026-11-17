@@ -95,6 +95,47 @@ st.markdown(
         border-left: 4px solid #6685ee; padding: .8rem 1rem;
         border-radius: 12px; color: {foreground}; margin-bottom: 1rem;
     }}
+    /* Prominent, genuine Streamlit file upload drop zone. */
+    .upload-hero {{
+        background: linear-gradient(120deg, #2856bc 0%, #6453c8 70%, #0f92b7 100%);
+        padding: 1.15rem 1.35rem;
+        border-radius: 16px 16px 0 0;
+        margin-top: 0.5rem;
+        margin-bottom: 0;
+    }}
+    .stApp .upload-hero h2 {{
+        color: #fff !important;
+        margin: 0.1rem 0 0.3rem;
+        font-size: 1.38rem;
+    }}
+    .stApp .upload-hero p {{color: #eef4ff !important; margin: 0;}}
+    .upload-tag {{
+        display: inline-block; border: 1px solid #ffffff65;
+        padding: .18rem .5rem; border-radius: 99px;
+        color: #fff; font-weight: 700; font-size: .74rem;
+    }}
+    .stApp [data-testid="stFileUploader"] {{
+        background: {surface};
+        border: 2px dashed #7b76e8;
+        border-radius: 16px;
+        padding: 0.85rem 1rem;
+        margin-top: .4rem;
+    }}
+    .stApp [data-testid="stFileUploaderDropzone"] {{
+        border: 1px solid {border};
+        background: {input_bg};
+        border-radius: 12px;
+        min-height: 118px;
+    }}
+    .stApp [data-testid="stFileUploaderDropzoneInstructions"] span,
+    .stApp [data-testid="stFileUploaderDropzoneInstructions"] small {{
+        color: {foreground} !important;
+    }}
+    .stApp [data-testid="stFileUploaderDropzone"] button {{
+        background: #566fe5;
+        border: none; border-radius: 10px;
+        color: white;
+    }}
     /* Smartphone/tablet layout: stack inputs instead of squeezing two columns. */
     @media (max-width: 768px) {{
         .stApp [data-testid="stMainBlockContainer"] {{
@@ -115,6 +156,10 @@ st.markdown(
             line-height: 1.5;
         }}
         .doctor-pill {{ font-size: 0.7rem; }}
+        .upload-hero {{ padding: 0.95rem 0.9rem; border-radius: 12px 12px 0 0; }}
+        .stApp .upload-hero h2 {{ font-size: 1.18rem; }}
+        .stApp [data-testid="stFileUploader"] {{ padding: 0.65rem; }}
+
         .doctor-note {{ font-size: 0.88rem; padding: 0.7rem 0.8rem; }}
         .stApp [data-testid="stHorizontalBlock"] {{
             flex-wrap: wrap !important;
@@ -137,7 +182,7 @@ st.markdown(
 )
 st.markdown(
     """<div class="doctor-hero">
-    <span class="doctor-pill">DEVELOPER TOOL · v1.1</span>
+    <span class="doctor-pill">DEVELOPER TOOL · v1.3.1 · 파일 업로드 UI</span>
     <h1>🩺 Code Doctor</h1>
     <p>코드 오류를 진단하고, 해결 방법을 찾고, 경험을 기록하세요.</p>
     </div>""",
@@ -146,6 +191,7 @@ st.markdown(
 page = st.sidebar.radio("메뉴", ["오류 분석·검색", "저장 기록", "오류 통계", "API·사용 안내"])
 st.sidebar.markdown("---")
 st.sidebar.caption("Code Doctor · 개발자 오류 해결 도구")
+st.sidebar.caption("📁 파일 업로드는 '오류 분석·검색' 화면 맨 위에서 할 수 있어요.")
 display_lang = st.sidebar.selectbox("설명 언어", list(LANGUAGES), index=0)
 target_language = LANGUAGES[display_lang]
 st.sidebar.caption("사용자 코드는 실행하지 않으며, 코드 전체를 외부 API에 전송하지 않습니다.")
@@ -182,26 +228,44 @@ def answer_view(answer, question):
 
 
 if page == "오류 분석·검색":
-    st.markdown('<div class="doctor-note">🔎 <b>진단 시작</b> · 오류 메시지나 코드를 입력하면 로컬에서 먼저 분석합니다.</div>', unsafe_allow_html=True)
-    st.subheader("1. 오류 또는 코드 입력")
-    st.caption("Python .py 파일을 끌어 놓으면 아래 코드 입력창에 내용이 채워집니다. 파일을 실행하지 않습니다.")
-    upload = st.file_uploader("📁 Python 파일 끌어놓기 또는 선택", type=["py"], key="python_upload")
-    if upload is None:
-        st.session_state.pop("last_upload_token", None)
-    elif upload.size > upload_helper.MAX_FILE_BYTES:
-        st.error("업로드 파일은 512KB 이하여야 합니다.")
-    else:
-        raw_bytes = upload.getvalue()
-        upload_token = (upload.name, hashlib.sha256(raw_bytes).hexdigest())
-        if st.session_state.get("last_upload_token") != upload_token:
-            try:
-                imported_source = upload_helper.decode_python_upload(upload.name, raw_bytes)
-            except ValueError as exc:
-                st.error(str(exc))
-            else:
-                st.session_state["code_input"] = imported_source
-                st.session_state["last_upload_token"] = upload_token
-                st.success(f"{upload.name} 파일을 읽었습니다. 아래 코드를 검토해 주세요.")
+    st.markdown(
+        """<div class="upload-hero">
+        <span class="upload-tag">STEP 1 · 파일 업로드</span>
+        <h2>📁 Python 파일 업로드</h2>
+        <p>파일을 드래그 앤 드롭하거나 버튼으로 선택하면 코드가 자동으로 입력됩니다.</p>
+        </div>""", unsafe_allow_html=True
+    )
+    with st.container(border=True):
+        st.markdown("**⬇️ 아래 업로드 칸에 Python .py 파일을 넣어 주세요**")
+        upload = st.file_uploader(
+            "Python 파일 선택 · 클릭하거나 드래그 앤 드롭",
+            type=["py"], key="python_upload",
+            help="UTF-8 .py 파일 1개 · 최대 512KB · 코드를 실행하지 않습니다.",
+        )
+        st.caption("지원 형식: .py / UTF-8 / 최대 512KB · 파일은 분석을 위해 읽기만 하며 실행하지 않습니다.")
+
+        if upload is None:
+            st.session_state.pop("last_upload_token", None)
+            st.info("파일이 없다면 아래 '직접 입력' 칸에 코드를 붙여 넣어도 됩니다.")
+        elif upload.size > upload_helper.MAX_FILE_BYTES:
+            st.error("파일 크기가 512KB를 초과했습니다. 작은 .py 파일로 다시 시도해 주세요.")
+        else:
+            raw_bytes = upload.getvalue()
+            upload_token = (upload.name, hashlib.sha256(raw_bytes).hexdigest())
+            if st.session_state.get("last_upload_token") != upload_token:
+                try:
+                    imported_source = upload_helper.decode_python_upload(upload.name, raw_bytes)
+                except ValueError as exc:
+                    st.error(str(exc))
+                else:
+                    st.session_state["code_input"] = imported_source
+                    st.session_state["last_upload_token"] = upload_token
+            if st.session_state.get("last_upload_token") == upload_token:
+                st.success("✅ 파일을 불러왔습니다! 아래 코드 입력창에 자동으로 반영됐어요.")
+                st.caption(f"파일: {html.escape(upload.name)} · {upload.size:,}바이트 · 아래 '로컬 오류 분석'에서 문법 검사 결과 확인")
+
+    st.subheader("✍️ 1. 코드 또는 오류 메시지 입력")
+    st.caption("파일을 업로드하면 오른쪽 코드 입력창이 자동으로 채워져요. 직접 입력하거나 수정할 수도 있습니다.")
 
     col1, col2 = st.columns(2)
     with col1:
