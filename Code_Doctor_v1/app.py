@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 
 import checker
+import ai_doctor
 import language_errors
 import search_history
 import line_view
@@ -31,9 +32,23 @@ def deepl_key():
         return os.getenv("DEEPL_API_KEY", "")
 
 
+def openai_key():
+    try:
+        return st.secrets.get("OPENAI_API_KEY", "") or os.getenv("OPENAI_API_KEY", "")
+    except (FileNotFoundError, OSError):
+        return os.getenv("OPENAI_API_KEY", "")
+
+
+def openai_model():
+    try:
+        return st.secrets.get("OPENAI_MODEL", "") or os.getenv("OPENAI_MODEL", "") or ai_doctor.DEFAULT_MODEL
+    except (FileNotFoundError, OSError):
+        return os.getenv("OPENAI_MODEL", "") or ai_doctor.DEFAULT_MODEL
+
+
 def init_state():
     defaults = {"results": [], "answers": [], "last_record_id": None,
-                "query": "", "question_id": None, "quota": None, "search_history": []}
+                "query": "", "question_id": None, "quota": None, "search_history": [], "ai_explanation": ""}
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -388,6 +403,32 @@ if page == "오류 분석·검색":
             st.warning("Python 이외 언어는 오류 메시지의 유형과 원인 안내만 지원합니다. 실제 구문 검사나 실행은 하지 않아요.")
     else:
         st.caption("코드를 입력하면 Python 문법을 검사할 수 있습니다. 문법 통과는 정상 실행을 보장하지 않아요.")
+
+    with st.expander("🧠 AI 오류 원인 설명 · 선택 기능", expanded=False):
+        st.caption("외부 AI를 사용하는 선택 기능입니다. API 키가 설정된 경우에만 사용할 수 있어요.")
+        ai_key = openai_key()
+        if not ai_key:
+            st.info("AI 연결 대기: Streamlit Secrets에 OPENAI_API_KEY를 등록해야 활성화됩니다.")
+        else:
+            st.success("AI API 키 설정이 확인됐습니다. 실제 연결은 요청 시 확인합니다.")
+        ai_code = st.checkbox("AI에 코드도 전송하기 (선택)", value=False, key="ai_send_code")
+        st.caption("오류 메시지·발생 상황을 AI 서버로 전송합니다. 위 항목을 선택한 경우에만 코드도 전송합니다.")
+        consent = st.checkbox("전송할 내용을 확인했으며 외부 AI 분석에 동의합니다", key="ai_send_consent")
+        payload = {"프로그래밍 언어": language, "오류 메시지": error_message, "상황 설명": description}
+        if ai_code:
+            payload["선택한 코드"] = code
+        if st.button("🧠 AI 원인 분석 시작", type="primary", disabled=not (ai_key and consent and (error_message.strip() or description.strip() or (ai_code and code.strip())))):
+            try:
+                with st.spinner("AI가 원인을 분석하는 중..."):
+                    st.session_state.ai_explanation = ai_doctor.request_response(
+                        payload, api_key=ai_key, model=openai_model(),
+                    )
+            except ai_doctor.AIServiceError as exc:
+                st.error(str(exc))
+        if st.session_state.ai_explanation:
+            st.markdown("**AI 원인 분석 결과**")
+            st.markdown(st.session_state.ai_explanation)
+            st.caption("AI는 코드를 실행하거나 해결을 검증하지 않았습니다. 제안은 직접 확인하세요.")
 
     with st.expander("오류 기록에 저장", expanded=False):
         cause = st.text_area("직접 확인한 원인", key="new_cause")
