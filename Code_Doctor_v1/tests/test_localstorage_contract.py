@@ -80,7 +80,7 @@ class LocalStorageContractTests(unittest.TestCase):
             app.sidebar.radio[0].set_value("기기별 프로필").run()
 
         self.assertEqual(len(app.exception), 0, [str(e) for e in app.exception])
-        self.assertTrue(any("브라우저 저장소" in str(e.message) for e in app.error))
+        self.assertTrue(any("브라우저 저장소" in str(e.body) for e in app.error))
 
 
 if __name__ == "__main__":
