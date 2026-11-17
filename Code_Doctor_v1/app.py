@@ -182,7 +182,7 @@ st.markdown(
 )
 st.markdown(
     """<div class="doctor-hero">
-    <span class="doctor-pill">DEVELOPER TOOL · v1.1</span>
+    <span class="doctor-pill">DEVELOPER TOOL · v1.3.1 · 파일 업로드 UI</span>
     <h1>🩺 Code Doctor</h1>
     <p>코드 오류를 진단하고, 해결 방법을 찾고, 경험을 기록하세요.</p>
     </div>""",
