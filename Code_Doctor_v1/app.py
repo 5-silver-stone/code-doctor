@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 
 import checker
+import line_view
 import security_guard
 import database as db
 import pypi_api
@@ -136,6 +137,42 @@ st.markdown(
         border: none; border-radius: 10px;
         color: white;
     }}
+    /* Escaped source preview: only the faulting row is emphasized. */
+    .doctor-code-excerpt {
+        margin: .45rem 0 1rem;
+        border: 1px solid {border};
+        background: {input_bg};
+        color: {foreground};
+        border-radius: 12px;
+        overflow-x: auto;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: .87rem;
+    }
+    .doctor-code-excerpt .code-normal-line,
+    .doctor-code-excerpt .code-error-line {
+        display: flex;
+        white-space: pre;
+        min-width: max-content;
+        padding: .18rem .85rem;
+    }
+    .doctor-code-excerpt .code-error-line {
+        background: #e14c4c28;
+        box-shadow: inset 4px 0 #dc3b50;
+        font-weight: 650;
+    }
+    .doctor-code-excerpt .code-line-num {
+        color: {muted};
+        user-select: none;
+        min-width: 3rem;
+        padding-right: 1rem;
+        text-align: right;
+        border-right: 1px solid {border};
+        margin-right: .75rem;
+    }
+    .doctor-code-excerpt .code-ellipsis {
+        color: {muted};
+        padding: 0 .9rem;
+    }
     /* Smartphone/tablet layout: stack inputs instead of squeezing two columns. */
     @media (max-width: 768px) {{
         .stApp [data-testid="stMainBlockContainer"] {{
@@ -312,6 +349,14 @@ if page == "오류 분석·검색":
                 st.success(syntax_result["message"])
             else:
                 st.error(f"{syntax_result['error_type']} · {syntax_result.get('line')}행, {syntax_result.get('column')}열: {syntax_result['message']}")
+                if security_guard.scan_text(code):
+                    st.warning("민감정보로 의심되는 내용이 있어 오류 위치 코드 미리보기를 숨겼습니다.")
+                else:
+                    excerpt = line_view.highlighted_excerpt(code, syntax_result.get("line"))
+                    if excerpt:
+                        st.markdown("**🔴 오류가 발생한 코드 줄**")
+                        st.markdown(excerpt, unsafe_allow_html=True)
+                        st.caption("빨간색으로 표시된 줄의 문법을 확인해 보세요. 코드는 실행하지 않았습니다.")
         else:
             st.warning("코드 문법 검사는 Python만 지원해요. 다른 언어는 오류 자료 검색만 가능합니다.")
     else:
