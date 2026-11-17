@@ -138,7 +138,7 @@ st.markdown(
         color: white;
     }}
     /* Escaped source preview: only the faulting row is emphasized. */
-    .doctor-code-excerpt {
+    .doctor-code-excerpt {{
         margin: .45rem 0 1rem;
         border: 1px solid {border};
         background: {input_bg};
@@ -147,20 +147,20 @@ st.markdown(
         overflow-x: auto;
         font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size: .87rem;
-    }
+    }}
     .doctor-code-excerpt .code-normal-line,
-    .doctor-code-excerpt .code-error-line {
+    .doctor-code-excerpt .code-error-line {{
         display: flex;
         white-space: pre;
         min-width: max-content;
         padding: .18rem .85rem;
-    }
-    .doctor-code-excerpt .code-error-line {
+    }}
+    .doctor-code-excerpt .code-error-line {{
         background: #e14c4c28;
         box-shadow: inset 4px 0 #dc3b50;
         font-weight: 650;
-    }
-    .doctor-code-excerpt .code-line-num {
+    }}
+    .doctor-code-excerpt .code-line-num {{
         color: {muted};
         user-select: none;
         min-width: 3rem;
@@ -168,11 +168,11 @@ st.markdown(
         text-align: right;
         border-right: 1px solid {border};
         margin-right: .75rem;
-    }
-    .doctor-code-excerpt .code-ellipsis {
+    }}
+    .doctor-code-excerpt .code-ellipsis {{
         color: {muted};
         padding: 0 .9rem;
-    }
+    }}
     /* Smartphone/tablet layout: stack inputs instead of squeezing two columns. */
     @media (max-width: 768px) {{
         .stApp [data-testid="stMainBlockContainer"] {{
