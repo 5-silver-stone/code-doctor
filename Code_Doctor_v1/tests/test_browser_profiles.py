@@ -53,8 +53,8 @@ class BrowserProfileTests(unittest.TestCase):
             app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
             app.sidebar.radio[0].set_value("기기별 프로필").run()
         self.assertEqual(len(app.exception), 0, [str(e) for e in app.exception])
-        text = "\n".join(str(x.value) for x in app.markdown)
-        self.assertIn("간편 프로필", text)
+        self.assertEqual(app.sidebar.radio[0].value, "기기별 프로필")
+        self.assertIn("📱 이 브라우저의 간편 프로필", (ROOT / "app.py").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
