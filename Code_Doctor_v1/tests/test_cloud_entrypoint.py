@@ -14,7 +14,7 @@ class CloudEntrypointTests(unittest.TestCase):
         app = AppTest.from_file(str(CLOUD_ENTRY), default_timeout=30).run()
         self.assertEqual(len(app.exception), 0, [str(e) for e in app.exception])
         rendered = "\n".join(str(item.value) for item in app.markdown)
-        self.assertIn("v2.1", rendered)
+        self.assertIn("v2.1.1", rendered)
         self.assertIn("Python 파일 업로드", rendered)
         self.assertGreaterEqual(len(app.sidebar.toggle), 1)
 
