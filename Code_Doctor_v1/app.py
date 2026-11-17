@@ -92,6 +92,43 @@ st.markdown(
         border-left: 4px solid #6685ee; padding: .8rem 1rem;
         border-radius: 12px; color: {foreground}; margin-bottom: 1rem;
     }}
+    /* Smartphone/tablet layout: stack inputs instead of squeezing two columns. */
+    @media (max-width: 768px) {{
+        .stApp [data-testid="stMainBlockContainer"] {{
+            padding: 1.25rem 0.9rem 3rem !important;
+        }}
+        .doctor-hero {{
+            padding: 1.15rem 1rem;
+            border-radius: 14px;
+            margin-bottom: 0.9rem;
+            box-shadow: 0 5px 16px #172f6420;
+        }}
+        .doctor-hero h1 {{
+            font-size: 1.7rem;
+            line-height: 1.25;
+        }}
+        .doctor-hero p {{
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }}
+        .doctor-pill {{ font-size: 0.7rem; }}
+        .doctor-note {{ font-size: 0.88rem; padding: 0.7rem 0.8rem; }}
+        .stApp [data-testid="stHorizontalBlock"] {{
+            flex-wrap: wrap !important;
+            row-gap: 0.75rem;
+        }}
+        .stApp [data-testid="column"] {{
+            flex: 1 1 100% !important;
+            min-width: 0 !important;
+            width: 100% !important;
+        }}
+        .stApp [data-testid="stDataFrame"] {{
+            max-width: 100%;
+            overflow-x: auto;
+        }}
+        .stApp .stButton button,
+        .stApp .stFormSubmitButton button {{ min-height: 2.65rem; }}
+    }}
     </style>""",
     unsafe_allow_html=True,
 )
