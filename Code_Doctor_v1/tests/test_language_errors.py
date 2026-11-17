@@ -57,7 +57,7 @@ class NonPythonDiagnosticsTests(unittest.TestCase):
         error = next(x for x in app.text_area if x.label == "오류 메시지 (선택)")
         error.set_value("ReferenceError: foo is not defined").run()
         self.assertEqual(len(app.exception), 0, [str(x) for x in app.exception])
-        self.assertIn("ReferenceError", "\n".join(str(x.message) for x in app.info))
+        self.assertIn("ReferenceError", "\n".join(str(x.body) for x in app.info))
 
 
 if __name__ == "__main__":
