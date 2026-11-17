@@ -232,7 +232,7 @@ if page == "오류 분석·검색":
         """<div class="upload-hero">
         <span class="upload-tag">STEP 1 · 파일 업로드</span>
         <h2>📁 Python 파일 업로드</h2>
-        <p>파일을 끌어 놓거나 버튼으로 선택하면 코드가 자동으로 입력됩니다.</p>
+        <p>파일을 드래그 앤 드롭하거나 버튼으로 선택하면 코드가 자동으로 입력됩니다.</p>
         </div>""", unsafe_allow_html=True
     )
     with st.container(border=True):
