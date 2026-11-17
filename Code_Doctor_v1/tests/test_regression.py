@@ -215,6 +215,12 @@ class StreamlitSmokeTests(unittest.TestCase):
             app.sidebar.radio[0].set_value(page).run()
             self.assertEqual(len(app.exception), 0, f"{page}: {[str(e) for e in app.exception]}")
 
+    def test_mobile_breakpoint_styles_are_present(self):
+        source = (APP_DIR / "app.py").read_text(encoding="utf-8")
+        self.assertIn("@media (max-width: 768px)", source)
+        self.assertIn("flex-wrap: wrap", source)
+        self.assertIn("min-width: 0", source)
+
 
 if __name__ == "__main__":
     unittest.main()
