@@ -238,7 +238,7 @@ st.markdown(
 )
 st.markdown(
     """<div class="doctor-hero">
-    <span class="doctor-pill">DEVELOPER TOOL · v2.1 · AI 디버깅 · 기기별 프로필</span>
+    <span class="doctor-pill">DEVELOPER TOOL · v2.1.1 · 기기별 프로필 수정</span>
     <h1>🩺 Code Doctor</h1>
     <p>코드 오류를 진단하고, 해결 방법을 찾고, 경험을 기록하세요.</p>
     </div>""",
@@ -708,8 +708,9 @@ elif page == "기기별 프로필":
     try:
         from streamlit_local_storage import LocalStorage
         local_storage = LocalStorage()
-        raw_profiles = local_storage.getItem(browser_profiles.STORAGE_KEY, key="cd_profile_load")
-    except (ImportError, RuntimeError, ValueError) as exc:
+        # streamlit-local-storage 0.0.25: getItem(itemKey) has no 'key=' argument.
+        raw_profiles = local_storage.getItem(browser_profiles.STORAGE_KEY)
+    except (ImportError, RuntimeError, ValueError, TypeError) as exc:
         st.error("브라우저 저장소 연결을 초기화하지 못했습니다. 프로필 기능을 사용할 수 없어요.")
         raw_profiles = None
         local_storage = None
