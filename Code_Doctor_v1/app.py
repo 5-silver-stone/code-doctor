@@ -551,7 +551,26 @@ elif page == "오류 통계":
         st.bar_chart(pd.DataFrame(statuses).set_index("status")["count"])
         st.markdown("**오류 유형별 기록 수**")
         st.bar_chart(pd.DataFrame(categories).set_index("error_type")["count"])
-        st.caption("통계는 외부 데이터가 아니라 사용자가 SQLite에 저장한 기록을 바탕으로 계산합니다.")
+        st.markdown("**📈 오류 등록 추세**")
+        range_days = st.selectbox(
+            "조회 기간", [7, 30, 90], index=1,
+            format_func=lambda days: f"최근 {days}일",
+        )
+        trend_rows = db.error_trend(days=range_days)
+        if trend_rows:
+            trend_df = pd.DataFrame(trend_rows)
+            trend_df["day"] = pd.to_datetime(trend_df["day"])
+            trend_df = trend_df.set_index("day")[["total", "resolved"]]
+            today = pd.Timestamp.today().normalize()
+            dates = pd.date_range(end=today, periods=range_days, freq="D")
+            trend_df = trend_df.reindex(dates, fill_value=0).rename(
+                columns={"total": "등록한 오류", "resolved": "현재 해결 상태"}
+            )
+            st.line_chart(trend_df)
+            st.caption("날짜는 오류 기록을 등록한 날 기준입니다. '현재 해결 상태'는 해당 날짜에 등록해 지금 해결된 기록 수입니다.")
+        else:
+            st.info("선택한 기간에 등록된 오류 기록이 없어요.")
+        st.caption("통계는 실제 코드 실행 횟수가 아니라 SQLite에 저장한 오류 기록을 기준으로 계산합니다. 사용자별 계정은 아직 지원하지 않습니다.")
 
 elif page == "API·사용 안내":
     st.subheader("연결 상태 및 사용 안내")
