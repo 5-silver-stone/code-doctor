@@ -270,37 +270,58 @@ if page == "오류 분석·검색":
         """<div class="upload-hero">
         <span class="upload-tag">STEP 1 · 파일 업로드</span>
         <h2>📁 Python 파일 업로드</h2>
-        <p>파일을 드래그 앤 드롭하거나 버튼으로 선택하면 코드가 자동으로 입력됩니다.</p>
+        <p>Python 파일을 여러 개 드래그 앤 드롭하고 분석할 파일을 선택할 수 있어요.</p>
         </div>""", unsafe_allow_html=True
     )
     with st.container(border=True):
-        st.markdown("**⬇️ 아래 업로드 칸에 Python .py 파일을 넣어 주세요**")
+        st.markdown("**⬇️ Python 파일을 하나 또는 여러 개 끌어 놓아 주세요**")
         upload = st.file_uploader(
             "Python 파일 선택 · 클릭하거나 드래그 앤 드롭",
-            type=["py"], key="python_upload",
-            help="UTF-8 .py 파일 1개 · 최대 512KB · 코드를 실행하지 않습니다.",
+            type=["py"], key="python_upload", accept_multiple_files=True,
+            help="한 번에 최대 10개 · 파일당 512KB · 전체 2MB · 코드를 실행하지 않습니다.",
         )
-        st.caption("지원 형식: .py / UTF-8 / 최대 512KB · 파일은 분석을 위해 읽기만 하며 실행하지 않습니다.")
-
-        if upload is None:
+        st.caption("지원 형식: .py / UTF-8 · 최대 10개 · 파일당 512KB · 총 2MB")
+        uploads = upload if isinstance(upload, list) else ([upload] if upload else [])
+        if not uploads:
             st.session_state.pop("last_upload_token", None)
-            st.info("파일이 없다면 아래 '직접 입력' 칸에 코드를 붙여 넣어도 됩니다.")
-        elif upload.size > upload_helper.MAX_FILE_BYTES:
-            st.error("파일 크기가 512KB를 초과했습니다. 작은 .py 파일로 다시 시도해 주세요.")
+            st.info("파일이 없다면 아래 코드 입력창에 직접 붙여 넣어도 됩니다.")
         else:
-            raw_bytes = upload.getvalue()
-            upload_token = (upload.name, hashlib.sha256(raw_bytes).hexdigest())
-            if st.session_state.get("last_upload_token") != upload_token:
-                try:
-                    imported_source = upload_helper.decode_python_upload(upload.name, raw_bytes)
-                except ValueError as exc:
-                    st.error(str(exc))
+            try:
+                upload_helper.validate_file_selection(uploads)
+            except ValueError as exc:
+                st.error(str(exc))
+            else:
+                st.caption(f"✅ {len(uploads)}개 파일 선택됨 · 파일을 선택하면 해당 코드만 문법 검사합니다.")
+                if len(uploads) > 1:
+                    selected_index = st.selectbox(
+                        "🔎 분석할 파일 선택", range(len(uploads)),
+                        format_func=lambda index: f"{index + 1}. {uploads[index].name}",
+                        key="upload_file_choice",
+                    )
                 else:
-                    st.session_state["code_input"] = imported_source
-                    st.session_state["last_upload_token"] = upload_token
-            if st.session_state.get("last_upload_token") == upload_token:
-                st.success("✅ 파일을 불러왔습니다! 아래 코드 입력창에 자동으로 반영됐어요.")
-                st.caption(f"파일: {html.escape(upload.name)} · {upload.size:,}바이트 · 아래 '로컬 오류 분석'에서 문법 검사 결과 확인")
+                    selected_index = 0
+                selected_file = uploads[selected_index]
+                raw_bytes = selected_file.getvalue()
+                upload_token = (
+                    selected_index, selected_file.name, hashlib.sha256(raw_bytes).hexdigest()
+                )
+                if st.session_state.get("last_upload_token") != upload_token:
+                    try:
+                        imported_source = upload_helper.decode_python_upload(
+                            selected_file.name, raw_bytes
+                        )
+                    except ValueError as exc:
+                        st.error(str(exc))
+                    else:
+                        st.session_state["code_input"] = imported_source
+                        st.session_state["last_upload_token"] = upload_token
+                if st.session_state.get("last_upload_token") == upload_token:
+                    st.success("✅ 선택한 파일을 불러왔습니다! 아래 코드 입력창에 반영됐어요.")
+                    st.caption(
+                        f"선택한 파일: {selected_file.name} · {selected_file.size:,}바이트"
+                    )
+                    if len(uploads) > 1:
+                        st.caption("각 파일을 개별 검사합니다. 파일 사이의 import 관계 분석은 아직 지원하지 않습니다.")
 
     st.subheader("✍️ 1. 코드 또는 오류 메시지 입력")
     st.caption("파일을 업로드하면 오른쪽 코드 입력창이 자동으로 채워져요. 직접 입력하거나 수정할 수도 있습니다.")
