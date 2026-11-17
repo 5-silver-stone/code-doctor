@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 
 import checker
+import language_errors
 import search_history
 import line_view
 import security_guard
@@ -358,10 +359,14 @@ if page == "오류 분석·검색":
             "이 검사는 일부 패턴만 감지하며 모든 민감정보를 찾아내지는 못합니다."
         )
 
-    error_type, explanation = checker.classify_error(error_message)
+    if language in ("javascript", "java", "c#"):
+        error_type, explanation, diagnostic_group = language_errors.classify_log(error_message, language)
+    else:
+        error_type, explanation = checker.classify_error(error_message)
+        diagnostic_group = checker.error_category(error_type)
     st.subheader("2. 로컬 오류 분석")
     if error_type:
-        st.info(f"**추출된 오류 유형:** {error_type}\n\n**분류:** {checker.error_category(error_type)}\n\n{explanation}")
+        st.info(f"**추출된 오류 유형:** {error_type}\n\n**분류:** {diagnostic_group}\n\n{explanation}")
     elif error_message:
         st.info("오류 유형을 자동 추출하지 못했습니다. 아래에 검색어를 직접 입력할 수 있어요.")
     if code.strip():
@@ -380,7 +385,7 @@ if page == "오류 분석·검색":
                         st.markdown(excerpt, unsafe_allow_html=True)
                         st.caption("빨간색으로 표시된 줄의 문법을 확인해 보세요. 코드는 실행하지 않았습니다.")
         else:
-            st.warning("코드 문법 검사는 Python만 지원해요. 다른 언어는 오류 자료 검색만 가능합니다.")
+            st.warning("Python 이외 언어는 오류 메시지의 유형과 원인 안내만 지원합니다. 실제 구문 검사나 실행은 하지 않아요.")
     else:
         st.caption("코드를 입력하면 Python 문법을 검사할 수 있습니다. 문법 통과는 정상 실행을 보장하지 않아요.")
 
