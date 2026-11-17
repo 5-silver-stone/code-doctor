@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 
 import checker
+import search_history
 import line_view
 import security_guard
 import database as db
@@ -31,7 +32,7 @@ def deepl_key():
 
 def init_state():
     defaults = {"results": [], "answers": [], "last_record_id": None,
-                "query": "", "question_id": None, "quota": None}
+                "query": "", "question_id": None, "quota": None, "search_history": []}
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -397,6 +398,23 @@ if page == "오류 분석·검색":
     auto_query = checker.suggest_query(error_message, language)
     if st.button("오류 메시지에서 검색어 추출"):
         st.session_state.query = auto_query
+    with st.expander("🕘 최근 검색 기록 · 이번 접속", expanded=False):
+        saved_searches = st.session_state.search_history
+        st.caption("검색어는 현재 접속에만 보관합니다. 서버 DB에 저장하지 않으며 접속이 끊기면 사라질 수 있어요.")
+        if not saved_searches:
+            st.info("아직 검색 기록이 없습니다. 검색에 성공하면 이곳에 나타납니다.")
+        else:
+            for number, item in enumerate(saved_searches):
+                left, right = st.columns([4, 1])
+                with left:
+                    st.text(f"{item['query']} · {item['language']} · 결과 {item['count']}개")
+                with right:
+                    if st.button("다시 사용", key=f"history_reuse_{number}"):
+                        st.session_state.query = item["query"]
+                        st.success("검색어를 입력창에 불러왔습니다.")
+            if st.button("이번 접속 기록 지우기"):
+                st.session_state.search_history = []
+                st.rerun()
     st.text_input("API로 보낼 검색어 (직접 수정 가능)", key="query", placeholder="예: StreamlitDuplicateElementKey")
     if st.button("관련 질문 10개 검색", type="primary"):
         if not st.session_state.query.strip():
@@ -411,6 +429,10 @@ if page == "오류 분석·검색":
                 st.session_state.answers = []
                 st.session_state.question_id = None
                 st.session_state.quota = data.get("quota_remaining")
+                st.session_state.search_history = search_history.add_search(
+                    st.session_state.search_history, st.session_state.query,
+                    language, len(st.session_state.results),
+                )
                 st.success(f"{len(st.session_state.results)}개 질문을 가져왔어요.")
             except (stack_api.APIError, ValueError) as exc:
                 st.error(str(exc))
