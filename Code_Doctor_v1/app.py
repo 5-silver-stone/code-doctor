@@ -270,7 +270,7 @@ if page == "오류 분석·검색":
         """<div class="upload-hero">
         <span class="upload-tag">STEP 1 · 파일 업로드</span>
         <h2>📁 Python 파일 업로드</h2>
-        <p>Python 파일 여러 개를 끌어 놓고 분석할 파일을 선택할 수 있어요.</p>
+        <p>Python 파일을 여러 개 드래그 앤 드롭하고 분석할 파일을 선택할 수 있어요.</p>
         </div>""", unsafe_allow_html=True
     )
     with st.container(border=True):
