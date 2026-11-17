@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 import checker
+import security_guard
 import database as db
 import pypi_api
 import stack_api
@@ -195,6 +196,24 @@ if page == "오류 분석·검색":
     expected = st.text_input("예상 결과 (선택)")
     actual = st.text_input("실제 결과 (선택)")
 
+    privacy_findings = security_guard.scan_fields({
+        "오류 메시지": error_message,
+        "코드": code,
+        "발생 상황": description,
+        "예상 결과": expected,
+        "실제 결과": actual,
+    })
+    if privacy_findings:
+        places = ", ".join(
+            f"{item['field']} {item['line']}행 ({item['kind']})"
+            for item in privacy_findings[:5]
+        )
+        st.warning(
+            f"⚠️ 민감정보로 의심되는 내용 {len(privacy_findings)}개를 발견했어요: {places}. "
+            "비밀번호, API 키, 이메일 등을 제거한 뒤 저장하거나 검색하세요. "
+            "이 검사는 일부 패턴만 감지하며 모든 민감정보를 찾아내지는 못합니다."
+        )
+
     error_type, explanation = checker.classify_error(error_message)
     st.subheader("2. 로컬 오류 분석")
     if error_type:
@@ -223,6 +242,17 @@ if page == "오류 분석·검색":
                 st.error("오류 기록 제목을 입력하세요.")
             elif not (error_message.strip() or code.strip() or description.strip()):
                 st.error("오류 메시지, 코드, 발생 상황 중 하나 이상을 입력하세요.")
+            elif security_guard.scan_fields({
+                "제목": title,
+                "오류 메시지": error_message,
+                "코드": code if store_code else "",
+                "발생 상황": description,
+                "예상 결과": expected,
+                "실제 결과": actual,
+                "원인": cause,
+                "해결 방법": solution,
+            }):
+                st.error("민감정보가 의심되는 내용을 삭제하거나 가린 후 저장해 주세요.")
             else:
                 record_id = db.create_error({"title": title.strip(), "language": language,
                     "environment": environment, "error_type": error_type,
@@ -241,6 +271,8 @@ if page == "오류 분석·검색":
     if st.button("관련 질문 10개 검색", type="primary"):
         if not st.session_state.query.strip():
             st.error("검색어를 입력하거나 '오류 메시지에서 검색어 추출'을 눌러주세요.")
+        elif security_guard.scan_text(st.session_state.query):
+            st.error("검색어에 민감정보가 의심되는 내용이 있습니다. 제거한 뒤 다시 검색하세요.")
         else:
             try:
                 with st.spinner("Stack Overflow 질문을 검색하는 중..."):
