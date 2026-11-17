@@ -238,7 +238,7 @@ st.markdown(
 )
 st.markdown(
     """<div class="doctor-hero">
-    <span class="doctor-pill">DEVELOPER TOOL · v1.4 · 다중 파일 분석</span>
+    <span class="doctor-pill">DEVELOPER TOOL · v2.1 · AI 디버깅 · 기기별 프로필</span>
     <h1>🩺 Code Doctor</h1>
     <p>코드 오류를 진단하고, 해결 방법을 찾고, 경험을 기록하세요.</p>
     </div>""",
