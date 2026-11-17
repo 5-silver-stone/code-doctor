@@ -1,6 +1,7 @@
 """Code Doctor: Streamlit project for Python error research and learning."""
 import hashlib
 import html
+import json
 import os
 
 import pandas as pd
@@ -730,7 +731,7 @@ elif page == "기기별 프로필":
             st.session_state.browser_profile_write_count = token
             local_storage.setItem(
                 browser_profiles.STORAGE_KEY,
-                __import__("json").dumps(changed, ensure_ascii=False),
+                json.dumps(changed, ensure_ascii=False),
                 key=f"cd_profile_save_{token}",
             )
 
